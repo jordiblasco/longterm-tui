@@ -1,0 +1,41 @@
+# Stocks to review. Use Yahoo Finance symbols (suffixes for non-US exchanges):
+#   AAPL  |  NESN.SW (Swiss)  |  VOD.L (London)  |  FPH.NZ (NZX)  |  BHP.AX (ASX)
+stocks:
+  - AIQ
+  - VT
+  - SOXX
+  - ARTY
+  - AIQ
+  - SKYY
+  - QTUM
+  - VOO
+  - AAPL
+  - IBM
+  - GOOL
+  - RGTI
+  - NVO
+  - AMZN
+  - NVDA
+  - FJTSF
+  - AMD
+  - NFLX
+  - NTDOY
+  - ticker: NESN.SW
+    name: Nestlé
+  - ticker: FPH.NZ
+    name: Fisher & Paykel Healthcare
+
+# Optional. Everything below is optional; shown with its defaults.
+settings:
+  period: 2y            # price history used for RSI / MACD / SMAs (SMA200 needs > 1y)
+  thresholds:
+    rsi_buy: 30         # RSI below  -> buy signal
+    rsi_sell: 70        # RSI above  -> sell signal
+    peg_buy: 1.0
+    peg_sell: 2.0
+    roe_buy: 15         # percent
+    roe_sell: 8         # percent
+    current_ratio_buy: 1.5
+    current_ratio_sell: 1.0
+    score_buy: 2        # total score >= 2  -> BUY   (<= -2 -> SELL)
+    score_strong: 4     # total score >= 4  -> STRONG BUY (<= -4 -> STRONG SELL)

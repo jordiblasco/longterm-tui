@@ -1,0 +1,6 @@
+textual>=0.80
+yfinance>=0.2.50
+pandas>=2.0
+numpy
+PyYAML>=6.0
+rich
