@@ -20,16 +20,14 @@ stocks:
   - AMD
   - NFLX
   - NTDOY
-  - ticker: NESN.SW
-    name: Nestlé
-  - ticker: FPH.NZ
-    name: Fisher & Paykel Healthcare
+  - NESN.SW
+  - FPH.NZ
 
 # Optional. Everything below is optional; shown with its defaults.
 settings:
   period: 2y            # price history used for RSI / MACD / SMAs (SMA200 needs > 1y)
   thresholds:
-    rsi_buy: 30         # RSI below  -> buy signal
+    rsi_buy: 35         # RSI below  -> buy signal
     rsi_sell: 70        # RSI above  -> sell signal
     peg_buy: 1.0
     peg_sell: 2.0

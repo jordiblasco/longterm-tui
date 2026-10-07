@@ -81,6 +81,8 @@ def fetch_report(entry: Entry, th: Thresholds, period: str = "2y") -> StockRepor
         import yfinance as yf  # imported lazily so --demo works without it
 
         tk = yf.Ticker(entry.ticker)
+        name = tk.info.get("longName")
+        entry.name = name
         hist = tk.history(period=period, interval="1d", auto_adjust=False)
         if hist is None or hist.empty:
             return StockReport(entry.ticker, name=entry.name or entry.ticker,
@@ -89,9 +91,9 @@ def fetch_report(entry: Entry, th: Thresholds, period: str = "2y") -> StockRepor
             info = tk.info or {}
         except Exception:  # fundamentals are optional; technicals still work
             info = {}
-        return build_report(entry.ticker, entry.name, hist, info, th)
+        return build_report(entry.ticker, name, hist, info, th)
     except Exception as exc:  # network, parsing, rate limit...
-        return StockReport(entry.ticker, name=entry.name or entry.ticker,
+        return StockReport(entry.ticker, name or entry.ticker,
                            error=f"{type(exc).__name__}: {exc}")
 
 
@@ -110,7 +112,7 @@ def fetch_demo(entry: Entry, th: Thresholds, period: str = "2y") -> StockReport:
                          "Low": close * (1 - spread)}, index=idx)
     info = {
         "currency": "USD",
-        "longName": f"{entry.ticker} Demo Corp.",
+        "longName": f"{entry.ticker} Corp.",
         "trailingPE": float(rng.uniform(8, 40)),
         "pegRatio": float(rng.uniform(0.4, 3.2)),
         "returnOnEquity": float(rng.uniform(0.02, 0.35)),
