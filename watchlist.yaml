@@ -11,7 +11,7 @@ stocks:
   - VOO
   - AAPL
   - IBM
-  - GOOL
+  - GOOG
   - RGTI
   - NVO
   - AMZN
@@ -22,6 +22,21 @@ stocks:
   - NTDOY
   - NESN.SW
   - FPH.NZ
+  - EBO.NZ
+  - CNU.NZ
+  - FSF.NZ
+  - RKLB
+  - SHL.DE
+  - ONT.L
+  - NVS
+  - JNJ
+  - MRK
+  - PFE
+  - LLY
+  - SOPH
+  - E
+  - GFUZ
+  - CVX
 
 # Optional. Everything below is optional; shown with its defaults.
 settings:
