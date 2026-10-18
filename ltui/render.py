@@ -12,6 +12,7 @@ GREEN, RED, NEUTRAL, DIM = "bold green", "bold red", "", "dim"
 RATING_STYLE = {
     "STRONG BUY": "bold white on green",
     "BUY": "bold green",
+    "BUY THE DIP": "bold black on cyan",
     "HOLD": "yellow",
     "SELL": "bold red",
     "STRONG SELL": "bold white on red",
@@ -87,6 +88,9 @@ def detail_text(r: Optional[StockReport]) -> Text:
         t.append(" = buy signal   ")
         t.append("Red", style=RED)
         t.append(" = sell signal   plain = neutral   ")
+        t.append("   ")
+        t.append(" BUY THE DIP ", style=RATING_STYLE["BUY THE DIP"])
+        t.append(" = healthy company pulling back   ")
         t.append("—", style=DIM)
         t.append(" = no data.   Move with ↑/↓ to see the reasoning for each stock.")
         return t
@@ -106,6 +110,15 @@ def detail_text(r: Optional[StockReport]) -> Text:
     if extras:
         t.append("    " + "   ".join(extras), style=DIM)
     t.append("\n")
+    if r.dip.conditions:
+        t.append("  Buy the dip  ", style="bold")
+        t.append("YES" if r.dip.is_dip else "no ", style="bold cyan" if r.dip.is_dip else DIM)
+        t.append("   " + "  ".join(f"{'✓' if ok else '✗'} {label}" for label, ok, _ in r.dip.conditions), style=DIM)
+        t.append("\n")
+        if not r.dip.is_dip or r.rating == "BUY THE DIP":
+            for label, ok, note in r.dip.conditions:
+                t.append(f"      {'✓' if ok else '✗'} {label:<15}", style="cyan" if ok else DIM)
+                t.append(note + "\n", style=DIM)
     for sig in r.signals.values():
         word = "BUY " if sig.verdict == BUY and sig.available else \
                "SELL" if sig.verdict == SELL and sig.available else \

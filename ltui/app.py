@@ -18,7 +18,7 @@ class LongTermApp(App):
     TITLE = "Long-Term Investor Dashboard"
     CSS = """
     #table  { height: 1fr; }
-    #detail { height: auto; max-height: 12; padding: 0 1; border-top: solid $primary; }
+    #detail { height: auto; max-height: 18; padding: 0 1; border-top: solid $primary; }
     """
     BINDINGS = [
         ("r", "refresh", "Refresh"),

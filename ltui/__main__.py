@@ -27,6 +27,7 @@ def print_table(wl, demo: bool) -> None:
         table.add_row(*row_cells(rep))
     console.print(table)
     console.print("[green]Green[/] = buy signal · [red]Red[/] = sell signal · plain = neutral · "
+                  "[black on cyan] BUY THE DIP [/] = healthy company pulling back · "
                   "Not financial advice.", highlight=False)
 
 

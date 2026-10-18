@@ -1,14 +1,6 @@
 # Stocks to review. Use Yahoo Finance symbols (suffixes for non-US exchanges):
 #   AAPL  |  NESN.SW (Swiss)  |  VOD.L (London)  |  FPH.NZ (NZX)  |  BHP.AX (ASX)
 stocks:
-  - AIQ
-  - VT
-  - SOXX
-  - ARTY
-  - AIQ
-  - SKYY
-  - QTUM
-  - VOO
   - AAPL
   - IBM
   - GOOG
@@ -19,8 +11,14 @@ stocks:
   - QUBT
   - AMZN
   - NVDA
-  - FJTSF
+  - APH
+  - MU
+  - SNDK
+  - ASML
+  - SNPS
+  - MRVL
   - AMD
+  - IMOS
   - NFLX
   - NTDOY
   - FPH.NZ
@@ -28,22 +26,32 @@ stocks:
   - CNU.NZ
   - FSF.NZ
   - RKLB
+  - ASTS
   - NVS
   - NVO
+  - NVAX
   - JNJ
   - MRK
   - PFE
   - LLY
   - SOPH
+  - KOD
+  - TXG
+  - AXTI
+  - TWST
+  - SLS
+  - IOVA
+  - MRNA
   - E
   - GFUZ
   - CVX
+  - PLTR
 
 # Optional. Everything below is optional; shown with its defaults.
 settings:
   period: 2y            # price history used for RSI / MACD / SMAs (SMA200 needs > 1y)
   thresholds:
-    rsi_buy: 35         # RSI below  -> buy signal
+    rsi_buy: 30         # RSI below  -> buy signal
     rsi_sell: 70        # RSI above  -> sell signal
     peg_buy: 1.0
     peg_sell: 2.0
@@ -53,3 +61,10 @@ settings:
     current_ratio_sell: 1.0
     score_buy: 2        # total score >= 2  -> BUY   (<= -2 -> SELL)
     score_strong: 4     # total score >= 4  -> STRONG BUY (<= -4 -> STRONG SELL)
+    # "Buy the dip" (all conditions must hold; upgrades HOLD/BUY to BUY THE DIP)
+    dip_min_drawdown_pct: 10        # at least 10% below the 52-week high ...
+    dip_max_drawdown_pct: 35        # ... but not more than 35% (avoid falling knives)
+    dip_rsi_max: 40                 # RSI cooled off to 40 or lower
+    dip_sma200_tolerance_pct: 10    # price not more than 10% under the SMA200
+    dip_require_rising_sma200: true # long-term trend (SMA200) still pointing up
+    dip_min_fundamentals: 2         # need PEG/ROE/current-ratio data for >= 2 metrics

@@ -81,9 +81,7 @@ def fetch_report(entry: Entry, th: Thresholds, period: str = "2y") -> StockRepor
         import yfinance as yf  # imported lazily so --demo works without it
 
         tk = yf.Ticker(entry.ticker)
-        name = tk.info.get("longName")
-        entry.name = name
-        hist = tk.history(period=period, interval="1d", auto_adjust=False)
+        hist = tk.history(period=period, interval="1d", auto_adjust=True)
         if hist is None or hist.empty:
             return StockReport(entry.ticker, name=entry.name or entry.ticker,
                                error="No price history returned (wrong ticker symbol?)")
@@ -91,9 +89,9 @@ def fetch_report(entry: Entry, th: Thresholds, period: str = "2y") -> StockRepor
             info = tk.info or {}
         except Exception:  # fundamentals are optional; technicals still work
             info = {}
-        return build_report(entry.ticker, name, hist, info, th)
+        return build_report(entry.ticker, entry.name, hist, info, th)
     except Exception as exc:  # network, parsing, rate limit...
-        return StockReport(entry.ticker, name or entry.ticker,
+        return StockReport(entry.ticker, name=entry.name or entry.ticker,
                            error=f"{type(exc).__name__}: {exc}")
 
 
@@ -106,13 +104,13 @@ def fetch_demo(entry: Entry, th: Thresholds, period: str = "2y") -> StockReport:
     drift = rng.uniform(-0.0006, 0.0014)
     rets = rng.normal(drift, 0.015, n)
     close = rng.uniform(20, 400) * np.exp(np.cumsum(rets))
-    idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=n)
+    idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=n + 5)[-n:]  # robust on weekends
     spread = np.abs(rng.normal(0.01, 0.004, n))
     hist = pd.DataFrame({"Close": close, "High": close * (1 + spread),
                          "Low": close * (1 - spread)}, index=idx)
     info = {
         "currency": "USD",
-        "longName": f"{entry.ticker} Corp.",
+        "longName": f"{entry.ticker} Demo Corp.",
         "trailingPE": float(rng.uniform(8, 40)),
         "pegRatio": float(rng.uniform(0.4, 3.2)),
         "returnOnEquity": float(rng.uniform(0.02, 0.35)),

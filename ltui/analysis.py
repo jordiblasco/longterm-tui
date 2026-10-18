@@ -30,6 +30,13 @@ class Thresholds:
     score_buy: int = 2               # total score >= this -> BUY
     score_strong: int = 4            # total score >= this -> STRONG BUY
     min_indicators: int = 3          # fewer available indicators -> "N/A"
+    # "Buy the dip": a pullback in a healthy company whose long-term trend is intact
+    dip_min_drawdown_pct: float = 10.0       # at least this far below the 52-week high
+    dip_max_drawdown_pct: float = 35.0       # ...but not a falling knife (deeper = broken?)
+    dip_rsi_max: float = 40.0                # RSI at or below this (cooled off / near oversold)
+    dip_sma200_tolerance_pct: float = 10.0   # price may dip this far under the SMA200
+    dip_require_rising_sma200: bool = True   # SMA200 must be higher than ~1 month ago
+    dip_min_fundamentals: int = 2            # need data for at least this many of PEG/ROE/current ratio
 
     @classmethod
     def from_dict(cls, data: Optional[dict]) -> "Thresholds":
@@ -51,7 +58,7 @@ def rsi(close: pd.Series, period: int = 14) -> pd.Series:
     """Wilder's RSI."""
     delta = close.diff()
     gain = delta.clip(lower=0.0)
-    loss = -1 * delta.clip(upper=0.0)
+    loss = -delta.clip(upper=0.0)
     avg_gain = gain.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
     avg_loss = loss.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
     rs = avg_gain / avg_loss
@@ -179,6 +186,69 @@ def current_ratio_signal(cr: Optional[float], th: Thresholds) -> Signal:
 
 
 # --------------------------------------------------------------------------
+# Buy-the-dip check
+# --------------------------------------------------------------------------
+@dataclass
+class DipCheck:
+    """Every condition must pass. `conditions` = [(label, ok, explanation)]."""
+    conditions: list = field(default_factory=list)
+
+    @property
+    def is_dip(self) -> bool:
+        return bool(self.conditions) and all(ok for _, ok, _ in self.conditions)
+
+
+def dip_check(rep: "StockReport", sma200_prev: Optional[float], th: Thresholds) -> DipCheck:
+    c: list = []
+    off = rep.off_52w_high_pct
+
+    # 1. A real pullback, but not a collapse
+    if off is None:
+        c.append(("Pullback", False, "52-week high unknown"))
+    else:
+        ok = -th.dip_max_drawdown_pct <= off <= -th.dip_min_drawdown_pct
+        c.append(("Pullback", ok,
+                  f"{off:+.1f}% from 52w high (needs {-th.dip_min_drawdown_pct:g}% to {-th.dip_max_drawdown_pct:g}%)"))
+
+    # 2. Momentum has cooled
+    if rep.rsi is None:
+        c.append(("Cooled off", False, "RSI unknown"))
+    else:
+        c.append(("Cooled off", rep.rsi <= th.dip_rsi_max,
+                  f"RSI {rep.rsi:.1f} (needs <= {th.dip_rsi_max:g})"))
+
+    # 3. Long-term uptrend still intact
+    if rep.price is None or rep.sma200 is None:
+        c.append(("Uptrend intact", False, "needs 200 days of history"))
+    else:
+        floor = rep.sma200 * (1 - th.dip_sma200_tolerance_pct / 100)
+        ok = rep.price >= floor
+        note = f"price {'above' if rep.price >= rep.sma200 else 'within tolerance of'} SMA200"
+        if not ok:
+            note = f"price more than {th.dip_sma200_tolerance_pct:g}% under SMA200"
+        if th.dip_require_rising_sma200:
+            if sma200_prev is None:
+                ok, note = False, "SMA200 slope unknown"
+            elif rep.sma200 <= sma200_prev:
+                ok, note = False, "SMA200 is falling"
+            else:
+                note += ", SMA200 rising"
+        c.append(("Uptrend intact", ok, note))
+
+    # 4. Quality: nothing wrong with the fundamentals
+    fund = [rep.signals[k] for k in ("peg", "roe", "cr") if k in rep.signals]
+    have = [f for f in fund if f.available]
+    bad = [f.label for f in have if f.verdict == SELL]
+    if len(have) < th.dip_min_fundamentals:
+        c.append(("Quality", False, f"only {len(have)} fundamental metric(s) available"))
+    elif bad:
+        c.append(("Quality", False, "weak: " + ", ".join(bad)))
+    else:
+        c.append(("Quality", True, "no fundamental red flags (PEG / ROE / current ratio)"))
+    return DipCheck(c)
+
+
+# --------------------------------------------------------------------------
 # Report
 # --------------------------------------------------------------------------
 @dataclass
@@ -205,6 +275,7 @@ class StockReport:
     signals: dict = field(default_factory=dict)   # key -> Signal
     score: int = 0
     rating: str = "N/A"
+    dip: DipCheck = field(default_factory=DipCheck)
     error: Optional[str] = None
 
     @property
@@ -261,7 +332,9 @@ def build_report(ticker: str, name: Optional[str], hist: pd.DataFrame,
     rep.rsi = last(rsi(close))
     line, sig, hist_ = macd(close)
     rep.macd_line, rep.macd_signal, rep.macd_hist = last(line), last(sig), last(hist_)
-    rep.sma50, rep.sma200 = last(sma(close, 50)), last(sma(close, 200))
+    sma200_series = sma(close, 200).dropna()
+    rep.sma50, rep.sma200 = last(sma(close, 50)), last(sma200_series)
+    sma200_prev = float(sma200_series.iloc[-22]) if len(sma200_series) > 21 else None
 
     # --- fundamentals -----------------------------------------------------------
     rep.pe = first_num(info.get("trailingPE"))
@@ -287,4 +360,10 @@ def build_report(ticker: str, name: Optional[str], hist: pd.DataFrame,
     rep.score = sum(s.verdict for s in rep.signals.values())
     available = sum(1 for s in rep.signals.values() if s.available)
     rep.rating = rating_for(rep.score, available, th)
+
+    # A dip never overrides STRONG BUY / SELL / STRONG SELL / N/A: it upgrades
+    # a HOLD (or plain BUY) into "BUY THE DIP" when every dip condition holds.
+    rep.dip = dip_check(rep, sma200_prev, th)
+    if rep.dip.is_dip and rep.rating in ("HOLD", "BUY"):
+        rep.rating = "BUY THE DIP"
     return rep

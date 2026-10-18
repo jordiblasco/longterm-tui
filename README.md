@@ -4,8 +4,6 @@ A single-table terminal dashboard that scores every stock in a YAML watchlist
 on long-term fundamentals and trend, using Yahoo Finance data (`yfinance`).
 Inspired by stocksTUI, but built for buy/hold/sell decisions instead of intraday updates.
 
-![Screencast](./screencast/ltui_demo.gif)
-
 ## Install & run
 
     python -m venv .venv && source .venv/bin/activate
@@ -13,6 +11,7 @@ Inspired by stocksTUI, but built for buy/hold/sell decisions instead of intraday
 
     python -m ltui watchlist.yaml          # interactive TUI
     python -m ltui watchlist.yaml --print  # print the table once and exit
+    python -m ltui --demo                  # offline synthetic data, to preview the UI
 
 Keys: `↑/↓` select a stock (reasoning shown below the table) · `r` refresh · `s` cycle sort · `q` quit.
 
@@ -44,6 +43,21 @@ Missing data votes 0 and shows `—`. The votes are summed into a score from -6 
 
 Rating: score ≥ +4 STRONG BUY · ≥ +2 BUY · ≤ -2 SELL · ≤ -4 STRONG SELL · otherwise HOLD
 (`N/A` if fewer than 3 indicators have data). All cut-offs are editable under `settings.thresholds`.
+
+### Buy the dip (cyan `BUY THE DIP`)
+
+A separate check for a healthy company that has pulled back. **All four** must hold:
+
+| Condition | Default |
+|---|---|
+| Pullback | 10 % to 35 % below the 52-week high (deeper = possible falling knife) |
+| Cooled off | RSI(14) ≤ 40 |
+| Uptrend intact | price no more than 10 % under SMA200, and SMA200 higher than ~1 month ago |
+| Quality | no SELL among PEG / ROE / current ratio, with data for at least 2 of them |
+
+If they all pass, a HOLD or BUY is upgraded to **BUY THE DIP**. STRONG BUY, SELL, STRONG SELL
+and N/A are never changed. Select a row to see which dip conditions passed (✓) or failed (✗).
+All values are the `dip_*` keys under `settings.thresholds`.
 
 ## Notes & limits
 
