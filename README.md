@@ -4,6 +4,8 @@ A single-table terminal dashboard that scores every stock in a YAML watchlist
 on long-term fundamentals and trend, using Yahoo Finance data (`yfinance`).
 Inspired by stocksTUI, but built for buy/hold/sell decisions instead of intraday updates.
 
+![Screencast](./screencast/ltui_demo.gif)
+
 ## Install & run
 
     python -m venv .venv && source .venv/bin/activate
